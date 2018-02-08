@@ -18,7 +18,8 @@ class USBReader(Reader):
         super(USBReader, self).__init__('IPICO USB Reader')
 
     def __scan(self):
-        while(d == ''):
+        d = None
+        while(d == None):
             try:
                 data = self.__usb_dev.read(self.__endpoint.bEndpointAddress,
                                            self.__endpoint.wMaxPacketSize)
@@ -30,10 +31,11 @@ class USBReader(Reader):
         return d
 
     def _read(self):
+        s = None
         while(s == None):
             ss = self.__scan()
             try:
-                s = super(FileReader,self)._read(ss)
+                s = super(USBReader,self)._read(ss, dt=datetime.now())
             except ValueError:
                 warnings.warn(f'Scan malformed: {ss}',
                               category=self.MalformedWarning)

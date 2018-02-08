@@ -2,8 +2,7 @@
 from ipico.reader import USBReader
 def main():
     rdr = USBReader()
-    while True:
-        s = rdr.read()
+    for s in rdr:
         print(s)
     
 if __name__ == '__main__':
