@@ -1,4 +1,4 @@
-from Reader import Reader
+from . import Reader
 from datetime import datetime
 import warnings
 class FileReader(Reader):

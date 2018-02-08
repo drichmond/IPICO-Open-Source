@@ -2,7 +2,7 @@
 import abc
 from datetime import datetime
 import warnings
-from Tag import TagFactory
+from ..Tag import TagFactory
 class Reader(abc.ABC):
     
     def __init__(self, name):

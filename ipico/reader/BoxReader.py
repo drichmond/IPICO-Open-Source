@@ -1,4 +1,4 @@
-from Reader import Reader
+from . import Reader
 import ipaddress
 class BoxReader(Reader):
 

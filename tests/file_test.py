@@ -1,5 +1,5 @@
 #!/usr/local/bin/python3.6
-from FileReader import FileReader
+from ipico.reader import FileReader
 from datetime import datetime
 def main():
     """
