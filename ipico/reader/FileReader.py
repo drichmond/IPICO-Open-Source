@@ -25,12 +25,20 @@ class FileReader(Reader):
             raise IOError(f'Failure while determining Reader ID. Reading '
                           f'first line of {self.__name} produced no data')
         self.f.seek(cur)
-        try:
-            s = self.Scan(0, ss)
-        except RuntimeError as e:
-            raise IOError(f'Failure while determining Reader ID. Reading '
-                          f'first line of {self.__name} produced malformed'
-                          f'scan string')
+        s = None
+        while(s == None and ss != ''):
+            try:
+                ss = self.f.readline().strip()
+                s = self.Scan(0, ss)
+            except ValueError:
+                warnings.warn(f'Failure while determining Reader ID. Reading '
+                              f'line of {self.__name} produced malformed'
+                              f'scan string')
+        
+        if(s == None):
+                raise RuntimeError(f'Failure while determining Reader ID. '
+                                   f'Could not find valid scan string in file: '
+                                   f'{self.__name}')
         return s.reader
 
     def _get_initial_time(self):
@@ -42,12 +50,20 @@ class FileReader(Reader):
                           f'Reading first line of {self.__name} produced no '
                           f'data')
         self.f.seek(cur)
-        try:
-            s = self.Scan(0, ss)
-        except ValueError as e:
-            raise IOError(f'Failure while determining time of first scan. '
-                          f'Reading first line of {self.__name} produced '
-                          f'malformed scan string')
+        s = None
+        while(s == None and ss != ''):
+            try:
+                ss = self.f.readline().strip()
+                s = self.Scan(0, ss)
+            except ValueError:
+                warnings.warn(f'Failure while determining Reader ID. Reading '
+                              f'line of {self.__name} produced malformed'
+                              f'scan string')
+        
+        if(s == None):
+                raise RuntimeError(f'Failure while determining Reader ID. '
+                                   f'Could not find valid scan string in file: '
+                                   f'{self.__name}')
         return s.time
 
     # TODO: DO Triggers cause any output? 

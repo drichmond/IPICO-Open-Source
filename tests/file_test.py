@@ -1,6 +1,8 @@
 #!/usr/local/bin/python3.6
 from ipico.reader import FileReader
-from datetime import datetime
+from datetime import datetime, timedelta
+from Grouper import Grouper
+from ipico import TagFactory
 def main():
     """
     device = usb.core.find(idVendor=0x0483, idProduct=0x3490)
@@ -20,7 +22,6 @@ def main():
     rdr = FileReader("finish")
     for s in rdr:
         print(s)
-
 
 if __name__ == '__main__':
   main()

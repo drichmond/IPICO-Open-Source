@@ -26,5 +26,5 @@ setup(name='ipico-os',
       author_email='drichmond@eng.ucsd.edu',
       url='https://github.com/drichmond/IPico-Open-Source/',
       license='Apache 2.0',
-      packages=['ipico', 'ipico.reader']
+      packages=['ipico', 'ipico.reader', 'ipico.race']
 )

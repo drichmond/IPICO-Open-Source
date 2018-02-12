@@ -6,7 +6,7 @@ from ..Tag import TagFactory
 class Reader(abc.ABC):
     
     def __init__(self, name):
-        self.scan_selftest()
+        #self.scan_selftest()
 
         self._seq = 0
         
@@ -93,7 +93,6 @@ class Reader(abc.ABC):
             
             self.__header = s[self.__FIELD_HEADER]
             
-            self.__tag = TagFactory.scan_tag(s[self.__FIELD_TAG_ID], self)
             self.__timseq = s[self.__FIELD_TIMSEQ]
             
             mat_a = s[self.__FIELD_MAT_A]
@@ -112,7 +111,7 @@ class Reader(abc.ABC):
             if(not(self.__reader.isdigit() and len(self.__reader) == 2)):
                     raise ValueError('Reader ID must be two-digit string. '
                                      'E.g. \'01\'')
-                
+            self.__time = None
             if(dt == None):
                 y = 2000 + int(s[self.__FIELD_YEAR_XX])
                 mo = int(s[self.__FIELD_MONTH])
@@ -121,16 +120,17 @@ class Reader(abc.ABC):
                 mi = int(s[self.__FIELD_MINUTE])
                 sec = int(s[self.__FIELD_SECOND])
                 us = 100000 * int(s[self.__FIELD_TENTHS])
-                self.__time  = datetime(y, mo, d, h, mi, sec, us)
+                self.__time = datetime(y, mo, d, h, mi, sec, us)
                 if(self.sort_time != s[self.__FIELD_TIMEALL]):
                     raise ValueError(f'Property sort_time and field TIMEALL' \
                                      f'did not match: {self.sort_time} '\
                                      f'{s[self.__FIELD_TIMEALL]}')
-            else:
-                if(isinstance(dt, datetime)):
+            elif(isinstance(dt, datetime)):
                     self.__time = dt
-                else:
-                    raise ValueError('Argument dt must be instance of datetime')
+            else:
+                raise ValueError('Argument dt must be instance of datetime')
+
+            self.__tag = TagFactory.scan_tag(s[self.__FIELD_TAG_ID], self)
                 
         @property
         def seq(self):
@@ -177,11 +177,14 @@ class Reader(abc.ABC):
             return (f'Scan Sequence Num: {self.__seq} (Tag: {self.tag}) @ '
                     f'{self.time.strftime("%y-%m-%d %H:%M:%S")} | '
                     f'Scan Unique ID: {self.seq_uid} from {self.mat}')
+
+        def __lt__(self, r):
+            return self.__time < r.time and int(self.seq_uid, 16) < int(r.seq_uid, 16)
         
     def scan_selftest(self):
         # self 0: Initialize Scan Object with Valid Scan String
         gold = 'aa00058001e5bf5a010004010101042524ff'
-        s = self.Scan(0, 'aa00058001e5bf5a010004010101042524ff')
+        s = self.Scan(0, gold)
         if(gold != s.raw):
             raise ValueError()
         # Test 1: Initialize Scan Object with invalid Scan String
@@ -200,8 +203,8 @@ class Reader(abc.ABC):
         # Test 3: Unexpected Characters
         
         try:
-            s = self.Scan(3, 'aa00058001e5bf5a010004010101042524f\r')
-        except IOError:
+            s = self.Scan(3, 'aa00058001e5bf5a010004010101042524fx')
+        except ValueError:
             pass
 
     class MalformedWarning(Warning):

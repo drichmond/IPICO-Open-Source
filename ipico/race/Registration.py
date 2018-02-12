@@ -1,5 +1,5 @@
 import csv
-from Tag import TagFactory
+from ..Tag import TagFactory
 import warnings
 from datetime import timedelta
 import re
@@ -122,7 +122,7 @@ class Registration():
 
             if division == 'Paratriathlete' and off != timedelta(minutes=0):
                 warnings.warn(f'{self.name[0]} {self.name[1]} with division '
-                              f'\`Paratriathlete\` '
+                              f'\'Paratriathlete\' '
                               f'Has non-zero timing offset. Shouldn\'t they be '
                               f'in wave 1, with field \'Offset (min)\' of 0?',
                               category=self.RegistrationWarning)
@@ -229,10 +229,13 @@ class Registration():
 
         self.__ag_values = self.__gen_ag_values(agperiod)
 
-        reg = self.__parse_csv(name)
+        self.__reg = self.__parse_csv(name)
 
-
+    def __getitem__(self, tag):
+        return self.__reg[tag]
+        
     def __parse_csv(self, name):
+        registration = dict()
         with open(f'{name}.csv', newline='') as csvf:
             sample = csvf.read()
             csvf.seek(0)
@@ -256,7 +259,6 @@ class Registration():
             reg = [{field : line[fieldmap[field]]
                     for field in self.__HEADER_FIELDS}
                    for line in rdr]
-            registration = set()
 
             for entry in reg:
                 bib = entry['Bib #'].strip()
@@ -275,9 +277,15 @@ class Registration():
                                         division, offset_minutes,
                                         highschool, univ, ag,
                                         timeadjust, relay_name)
-                registration.add(registrant)
+                
+                registration[registrant.tag] = registrant
+        return registration
 
-        def __registrant_selftest(self):
-            # TODO: Write Tests!
-            pass
+    def __iter__(self):
+        for k,v in self.__reg.items():
+            yield v
+
+    def __registrant_selftest(self):
+        # TODO: Write Tests!
+        pass
 

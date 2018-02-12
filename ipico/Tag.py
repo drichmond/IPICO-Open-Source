@@ -1,3 +1,4 @@
+from bisect import insort
 class TagFactory(type):
     __tag_dict = {}
     class Tag():
@@ -16,7 +17,7 @@ class TagFactory(type):
                 raise ValueError('Argument Tag ID (tag_id) must be a '
                                  '12-character hexadecimal string!')
             self.__id = tag_id
-            
+
         @property
         def id(self):
             return self.__id
@@ -26,11 +27,28 @@ class TagFactory(type):
             for s in self.__scans:
                 yield s
 
+        @property
+        def newest(self):
+            if(len(self.__scans) == 1):
+                return None
+            else:
+                return self.__scans[-1]
+
         def observe(self, scan):
-            self.__scans.append(scan)
+            insort(self.__scans, scan)
 
         def __str__(self):
             return self.id
+
+        def __hash__(self):
+            return int(self.id, 16)
+
+        def __eq__(self, o):
+            return self.id == o.id
+
+    @classmethod
+    def num_tags(cls):
+        return len(cls.__tag_dict.keys())
 
     @classmethod
     def register_tag(cls, tag_id):
