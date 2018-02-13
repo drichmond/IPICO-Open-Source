@@ -10,21 +10,33 @@ tout = FileReader("transition_out")
 fin = FileReader("finish")
 
 race = Race(reg, [tin, tout, fin])
-results = race.matches(sex='Male')
 numxings = 5
-# Can't sort all entries unless you remove the ones that have less
-# crossings than expected -- This is more common in DL and I don't
-# have a good way of handling it
-results = list(filter(lambda x: len(x.splits) == numxings, results))
-results.sort()
-for r in results:
-    print(r)
-results = race.matches()
-for r in results:
-    print(r)
 
-results = race.matches(name=("Johanna", "Gartman"))
-res = list(results)[0]
-for r in res.xings:
-    print(r)
+def tostr(delta):
+    h = int(delta.seconds / 3600)
+    m = int((delta.seconds % 3600) / 60)
+    s = int(delta.seconds % 60)
+    return (f'{h:0>2}:{m:0>2}:{s:0>2}')
+
+for sex in reg.sexes:
+    for div in reg.divisions:
+        results = [res for res in race.matches(sex=sex, division=div)
+                   if len(res.xings) == numxings]
+        results.sort()
+
+        print(f'\n\nResults for {sex}, {div}\n\n')
+        for r in results:
+            # Finish times are *explitly* not calculated so that the
+            # RD can decide what a valid finish time is. In this case,
+            # a valid finish time is a time with 5 crossings
+            fin = (f'- Finish: {r.deltatostr(r.finish)}')
+            print(str(r) + fin)
+
+        results = [res for res in race.matches(sex=sex, division=div)
+                   if len(res.xings) != numxings]
+
+        print(f'\n\nIncomplete Results for {sex}, {div}\n\n')
+        for r in results:
+            print(r)
+
 

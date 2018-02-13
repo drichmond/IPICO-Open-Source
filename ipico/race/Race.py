@@ -23,20 +23,20 @@ class Race():
                               f'has scan before gun time! Dropping Scan!')
             else:
                 insort(self.__xings, scan)
-
-        def __str__(self):
-            def tostr(delta):
+        @classmethod
+        def deltatostr(cls, delta):
                 h = int(delta.seconds / 3600)
                 m = int((delta.seconds % 3600) / 60)
                 s = int(delta.seconds % 60)
                 return (f'{h:0>2}:{m:0>2}:{s:0>2}')
+        def __str__(self):
             reg = self.__registrant
-            splits = [f'{tostr(t)}'for t in self.splits]
+            splits = [f'{self.deltatostr(t)} 'for t in self.splits]
             xings = [f'{str(s.time.strftime("%H:%M:%S"))}'for s in self.xings]
-            times = f'Start: {str(reg.guntime.strftime("%H:%M:%S"))} - '
-            times += "Splits:"
-            for sp in  splits:
-                times += f' {sp} | '
+            times = f'Gun Time: {str(reg.guntime.strftime("%H:%M:%S"))} - '
+            times += "Splits: "
+            times += str(splits) + " "
+
             fname = reg.name[0]
             lname = reg.name[1]
             div = reg.division
@@ -67,6 +67,16 @@ class Race():
         @property
         def xings(self):
             return copy.copy(self.__xings)
+
+        @property
+        def finish(self):
+            if(len(self.__xings) > 1):
+                return self.__xings[-1].time - self.__registrant.guntime
+            else:
+                name = self.__registrant.name
+                raise RuntimeError(f'No possible finish time for '
+                                   f'registrant {name[0]} {name[1]} '
+                                   f'with no mat crossings')
 
         def match(self, **kwargs):
             return all(i == True for i in [getattr(self.__registrant, k) == v
