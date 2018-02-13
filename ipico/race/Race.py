@@ -6,24 +6,17 @@ import copy
 import warnings
 class Race():
     class Result():
-        def __init__(self, registrant, guntime):
+        def __init__(self, registrant):
             if((registrant != None) and
                not isinstance(registrant, Registration.Registrant)):
                 raise TypeError('Argument registrant must be an instance of '
                                 'Registration.registrant')
-            if(not isinstance(guntime, datetime)):
-                raise TypeError('Argument guntime must be an instance of '
-                                'datetime.datetime')
-            # TODO: Pull from Registration
-            self.__guntime = guntime
-            if(registrant != None):
-                self.__guntime += registrant.offset
-
+            
             self.__registrant = registrant
             self.__xings = []
 
         def log(self, scan):
-            if(scan.time < self.__guntime):
+            if(scan.time < self.__registrant.guntime):
                 fname = self.__registrant.name[0]
                 lname = self.__registrant.name[1]
                 warnings.warn(f'Participant {fname} {lname} '
@@ -40,27 +33,22 @@ class Race():
             reg = self.__registrant
             splits = [f'{tostr(t)}'for t in self.splits]
             xings = [f'{str(s.time.strftime("%H:%M:%S"))}'for s in self.xings]
-            times = f'Start: {str(self.__guntime.strftime("%H:%M:%S"))} - '
+            times = f'Start: {str(reg.guntime.strftime("%H:%M:%S"))} - '
             times += "Splits:"
             for sp in  splits:
                 times += f' {sp} | '
-            if(reg != None):
-                fname = reg.name[0]
-                lname = reg.name[1]
-                div = reg.division
-                if(div == 'Open'):
-                    div += f' ({reg.age_group})'
-            else:
-                fname = "Unknown"
-                lname = "Racer"
-                div = "Unkonwn"
+            fname = reg.name[0]
+            lname = reg.name[1]
+            div = reg.division
+            if(div == 'Open'):
+                div += f' ({reg.age_group})'
             return (f'{fname:20s} {lname:20s} {div:20s} {times}')
 
         @property
         def splits(self):
             numxings = len(self.__xings)
             ts = [None]*numxings
-            last = self.__guntime
+            last = self.__registrant.guntime
             for i in range(numxings):
                 cur = self.__xings[i].time
                 split = cur - last
@@ -80,12 +68,9 @@ class Race():
         def xings(self):
             return copy.copy(self.__xings)
 
-        def match(self, unknown=False, **kwargs):
-            if(self.__registrant == None):
-                return False
-            else:
-                return all(i == True for i in [getattr(self.__registrant, k) == v
-                                               for k, v in kwargs.items()])
+        def match(self, **kwargs):
+            return all(i == True for i in [getattr(self.__registrant, k) == v
+                                           for k, v in kwargs.items()])
 
         def __lt__(self, o):
             if(not isinstance(o, Race.Result)):
@@ -94,15 +79,11 @@ class Race():
                 raise RuntimeError('Invalid results in comparison')
             return self.__xings[-1] < o.xings[-1]
 
-    def __init__(self, guntime, reg, readers):
-        if(not isinstance(guntime, datetime)):
-            raise TypeError('Argument guntime must be an instance of'
-                               'datetime.datetime')
-        self.__guntime = guntime
+    def __init__(self, reg, readers):
 
         self.__registration = reg
 
-        self.__results = {registrant.tag : self.Result(registrant, guntime)
+        self.__results = {registrant.tag : self.Result(registrant)
                           for registrant in self.__registration}
 
         if(not isinstance(readers, list)):
@@ -120,11 +101,7 @@ class Race():
                 try:
                     self.__results[s.tag].log(s)
                 except KeyError:
-                    print(f'Unknown tag: {s.tag}')
-                    warnings.warn(f'No registrant matched tag: {s.tag}. '
-                                  'Added to registration table without '
-                                  'registrant data')
-                    self.__results[s.tag] = self.Result(None, guntime)
+                    warnings.warn(f'No registrant matched tag: {s.tag}. Ignoring Tag')
 
     def matches(self, **kwargs):
         if(kwargs == {}):

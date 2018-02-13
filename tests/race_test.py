@@ -2,14 +2,14 @@
 from ipico.reader import FileReader
 from ipico.race import Registration
 from ipico.race import Race
-from datetime import datetime, timedelta
-reg = Registration("2016_Tritonman_DL", 10)
+from datetime import date
+date = date(2016, 2, 20)
+reg = Registration("2016_Tritonman_DL", date, 10)
 tin = FileReader("transition_in")
 tout = FileReader("transition_out")
 fin = FileReader("finish")
-gun = datetime(2016, 2, 20, 6, 58, 59)
 
-race = Race(gun, reg, [tin, tout, fin])
+race = Race(reg, [tin, tout, fin])
 results = race.matches(sex='Male')
 numxings = 5
 # Can't sort all entries unless you remove the ones that have less

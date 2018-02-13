@@ -1,14 +1,13 @@
 import csv
 from ..Tag import TagFactory
 import warnings
-from datetime import timedelta
+from datetime import time, date, datetime
 import re
 
-# TODO: Replace Offset with Guntime
 class Registration():
     class Registrant():
         def __init__(self, reg, bib, tag_id, first, last, sex,
-                     division, offset_minutes, hs, univ, ag,
+                     division, guntime, hs, univ, ag,
                      timeadjust, relay_name):
             def isname(s):
                 return re.fullmatch('[a-zA-Z-\s]*', s) != None
@@ -112,18 +111,15 @@ class Registration():
                               f'feature is not implemented')
 
             try:
-                off = (int(offset_minutes))
-            except ValueError:
-                raise ValueError(f'Time Offset must be number. E.g. \'42\' '
-                                 f'Got \'{offset_minutes}\'')
-            self.__offset = timedelta(minutes=off)
-
-            if division == 'Paratriathlete' and off != timedelta(minutes=0):
-                warnings.warn(f'{self.name[0]} {self.name[1]} with division '
-                              f'\'Paratriathlete\' '
-                              f'Has non-zero timing offset. Shouldn\'t they be '
-                              f'in wave 1, with field \'Offset (min)\' of 0?',
-                              category=self.RegistrationWarning)
+                # HACK!
+                h, m, s = map(int, guntime.split(':'))
+                t = time(hour=h, minute=m, second=s)
+            except Exception as e:
+                raise e
+                raise ValueError(f'Guntime must be H:M:S (24-hour format, '
+                                 f'2-digits per field) '
+                                 f'Got \'{guntime}\'')
+            self.__guntime = datetime.combine(reg.date, t)
 
         @property
         def division(self):
@@ -146,8 +142,8 @@ class Registration():
             return self.__division
 
         @property
-        def offset(self):
-            return self.__offset
+        def guntime(self):
+            return self.__guntime
 
         @property
         def hs(self):
@@ -169,16 +165,6 @@ class Registration():
 
         @property
         def age_group(self):
-            div = self.division
-            if(div != "Elite" or div != "Open"):
-                raise ValueError(f'Registrant {self.name[0]} '
-                                 f'{self.name[1]} is in Division '
-                                 f'{self.division}, but University'
-                                 f'field was queried')
-            return self.__univ
-
-        @property
-        def age_group(self):
             return self.__ag
 
         class MalformedWarning(Warning):
@@ -190,7 +176,7 @@ class Registration():
                 Warning.__init__(self,*args,**kwargs)
 
     __HEADER_FIELDS = ['Bib #', 'RFID', 'First Name', 'Last Name',
-                       'Sex', 'Division', 'Offset (min)',
+                       'Sex', 'Division', 'Gun Time (24-H:M:S)',
                        'High School', 'University',
                        'Age Group', 'Time Adjustment', 'Relay Name']
     __AGE_GROUP_RANGE = (20, 70)
@@ -211,6 +197,10 @@ class Registration():
     def sexes(self):
         return self.__SEX_VALUES
 
+    @property
+    def date(self):
+        return self.__date
+
     def __gen_ag_values(self, agp):
         min = self.__AGE_GROUP_RANGE[0]
         max = self.__AGE_GROUP_RANGE[1]
@@ -220,11 +210,16 @@ class Registration():
             vals.add(f'{low}-{high}')
         return vals
 
-    def __init__(self, name, agperiod):
+    def __init__(self, name, d, agperiod):
         if(not (isinstance(name, str))):
             raise RuntimeError('Argument name (Reader Name) must '
                                'be a string')
         self.__name = name
+
+        if(not isinstance(d, date)):
+            raise TypeError('Argument date must be an instance of'
+                            'datetime.date')
+        self.__date = d
 
         if(agperiod not in self.__AGE_GROUP_PERIODS):
             raise ValueError(f'Invalid Age Group Period {agperiod}.'
@@ -270,7 +265,7 @@ class Registration():
                 last = entry['Last Name'].strip()
                 sex = entry['Sex'].strip()
                 division = entry['Division'].strip()
-                offset_minutes = entry['Offset (min)'].strip()
+                offset_minutes = entry['Gun Time (24-H:M:S)'].strip()
                 highschool = entry['High School'].strip()
                 univ = entry['University'].strip()
                 ag = entry['Age Group'].strip()
