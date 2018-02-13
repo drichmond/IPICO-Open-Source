@@ -176,10 +176,11 @@ class Reader(abc.ABC):
         def __str__(self):
             return (f'Scan Sequence Num: {self.__seq} (Tag: {self.tag}) @ '
                     f'{self.time.strftime("%y-%m-%d %H:%M:%S")} | '
-                    f'Scan Unique ID: {self.seq_uid} from {self.mat}')
+                    f'Scan Unique ID: {self.seq_uid} from {self.mat} on'
+                    f'Reader {self.reader}')
 
         def __lt__(self, r):
-            return self.__time < r.time and int(self.seq_uid, 16) < int(r.seq_uid, 16)
+            return self.raw[self.__FIELD_TIMEALL] < r.raw[self.__FIELD_TIMEALL]
         
     def scan_selftest(self):
         # self 0: Initialize Scan Object with Valid Scan String

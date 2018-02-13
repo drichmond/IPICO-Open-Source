@@ -14,44 +14,85 @@ class Race():
             if(not isinstance(guntime, datetime)):
                 raise TypeError('Argument guntime must be an instance of '
                                 'datetime.datetime')
+            # TODO: Pull from Registration
             self.__guntime = guntime
+            if(registrant != None):
+                self.__guntime += registrant.offset
 
             self.__registrant = registrant
             self.__xings = []
-            self.__times = []
 
         def log(self, scan):
-            insort(self.__xings, scan)
-            if(self.__registrant != None):
-                t = scan.time - self.__guntime - self.__registrant.offset
+            if(scan.time < self.__guntime):
+                fname = self.__registrant.name[0]
+                lname = self.__registrant.name[1]
+                warnings.warn(f'Participant {fname} {lname} '
+                              f'has scan before gun time! Dropping Scan!')
             else:
-                t = scan.time - self.__guntime                
-            insort(self.__times, t)
+                insort(self.__xings, scan)
 
         def __str__(self):
+            def tostr(delta):
+                h = int(delta.seconds / 3600)
+                m = int((delta.seconds % 3600) / 60)
+                s = int(delta.seconds % 60)
+                return (f'{h:0>2}:{m:0>2}:{s:0>2}')
             reg = self.__registrant
-            times = [str(time)
-                     for time in self.__times]
+            splits = [f'{tostr(t)}'for t in self.splits]
+            xings = [f'{str(s.time.strftime("%H:%M:%S"))}'for s in self.xings]
+            times = f'Start: {str(self.__guntime.strftime("%H:%M:%S"))} - '
+            times += "Splits:"
+            for sp in  splits:
+                times += f' {sp} | '
             if(reg != None):
                 fname = reg.name[0]
-                lname = reg.name[1] 
+                lname = reg.name[1]
+                div = reg.division
+                if(div == 'Open'):
+                    div += f' ({reg.age_group})'
             else:
                 fname = "Unknown"
                 lname = "Racer"
-            return (f'{fname:20s} {lname:20s}'
-                    f'Times: {times}')
+                div = "Unkonwn"
+            return (f'{fname:20s} {lname:20s} {div:20s} {times}')
+
         @property
-        def times(self):
-            return copy.copy(self.__times)
+        def splits(self):
+            numxings = len(self.__xings)
+            ts = [None]*numxings
+            last = self.__guntime
+            for i in range(numxings):
+                cur = self.__xings[i].time
+                split = cur - last
+                if(split < timedelta()):
+                    name = self.__registrant.name
+                    warnings.warn(f'Participant {name[0]} {name[1]} '
+                                  f'has negative time split!')
+                if(split.days != 0):
+                    name = self.__registrant.name
+                    warnings.warn(f'Participant {name[0]} {name[1]} '
+                                  f'has negative time split!')
+                ts[i] = split
+                last = cur
+            return ts
+
+        @property
+        def xings(self):
+            return copy.copy(self.__xings)
+
+        def match(self, unknown=False, **kwargs):
+            if(self.__registrant == None):
+                return False
+            else:
+                return all(i == True for i in [getattr(self.__registrant, k) == v
+                                               for k, v in kwargs.items()])
 
         def __lt__(self, o):
-            if(not isinstance(guntime, datetime)):
-                raise TypeError('Argument o must be an instance of'
-                                'Result')
-            if(len(self.__times) < len(o.times) or
-               self.__times[-1] < o.times[-1]):
-                return False
-                
+            if(not isinstance(o, Race.Result)):
+                raise TypeError('Argument o must be an instance of Result')
+            if(len(self.__xings) != len(o.xings)):
+                raise RuntimeError('Invalid results in comparison')
+            return self.__xings[-1] < o.xings[-1]
 
     def __init__(self, guntime, reg, readers):
         if(not isinstance(guntime, datetime)):
@@ -72,6 +113,8 @@ class Race():
                     raise TypeError('All elements in argument readers (list) '
                                     'must be an instance of '
                                     'ipico.reader.Reader')
+
+        # Nasty mess, can we simplify?
         for rdr in readers:
             for s in self.filter(rdr):
                 try:
@@ -82,12 +125,13 @@ class Race():
                                   'Added to registration table without '
                                   'registrant data')
                     self.__results[s.tag] = self.Result(None, guntime)
-                    
 
-        for (k, result) in self.__results.items():
-            print(result)
-            
-                
+    def matches(self, **kwargs):
+        if(kwargs == {}):
+            return self.__results.values()
+        else:
+            return filter(lambda res: res.match(**kwargs), self.__results.values())
+        
     class Crossing():
         def __init__(self, head):
             if(not isinstance(head, Reader.Scan)):

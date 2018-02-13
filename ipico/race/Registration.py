@@ -4,12 +4,10 @@ import warnings
 from datetime import timedelta
 import re
 
-# TODO: Use Slice instead of String range for age groups? 
-# TODO: Check all error cases
+# TODO: Replace Offset with Guntime
 class Registration():
     class Registrant():
-        __GENDER_VALUES = {'Male', 'Female'}
-        def __init__(self, reg, bib, tag_id, first, last, gender,
+        def __init__(self, reg, bib, tag_id, first, last, sex,
                      division, offset_minutes, hs, univ, ag,
                      timeadjust, relay_name):
             def isname(s):
@@ -90,12 +88,12 @@ class Registration():
             else:
                 self.__relay_name = None
 
-            if(gender not in self.__GENDER_VALUES):
-                raise ValueError(f'Invalid Gender entry: {gender}. '
+            if(sex not in reg.sexes):
+                raise ValueError(f'Invalid Sex entry: {sex}. '
                                  f'Valid entries are '
-                                 f'{self.__GENDER_VALUES}')
+                                 f'{self.__SEX_VALUES}')
 
-            self.__gender = gender
+            self.__sex = sex
 
             if(ag not in reg.age_groups):
                 raise ValueError(f'Invalid Age Group entry: {ag}. '
@@ -140,8 +138,8 @@ class Registration():
             return self.__name
 
         @property
-        def gender(self):
-            return self.__gender
+        def sex(self):
+            return self.__sex
 
         @property
         def division(self):
@@ -192,12 +190,13 @@ class Registration():
                 Warning.__init__(self,*args,**kwargs)
 
     __HEADER_FIELDS = ['Bib #', 'RFID', 'First Name', 'Last Name',
-                       'Gender', 'Division', 'Offset (min)',
+                       'Sex', 'Division', 'Offset (min)',
                        'High School', 'University',
                        'Age Group', 'Time Adjustment', 'Relay Name']
     __AGE_GROUP_RANGE = (20, 70)
     __AGE_GROUP_PERIODS = {1, 5, 10}
     __DIVISION_VALUES = {'Collegiate', 'High School', 'Elite', 'Relay', 'Open', 'Paratriathlete'}
+    __SEX_VALUES = {'Male', 'Female'}
 
     # TODO: Double and triple check these fields
     @property 
@@ -207,6 +206,10 @@ class Registration():
     @property 
     def divisions(self):
         return self.__DIVISION_VALUES
+
+    @property 
+    def sexes(self):
+        return self.__SEX_VALUES
 
     def __gen_ag_values(self, agp):
         min = self.__AGE_GROUP_RANGE[0]
@@ -249,12 +252,12 @@ class Registration():
                 raise ValueError('Malformed .csv File: No header found!')
 
             header = rdr.__next__()
-
-            try: 
-                fieldmap = {field : header.index(field)
-                            for field in self.__HEADER_FIELDS}
-            except ValueError:
-                raise ValueError(f'Malformed .csv File: Column \'{field}\' not found!')
+            fieldmap = dict()
+            for field in self.__HEADER_FIELDS:
+                try:
+                    fieldmap[field] = header.index(field)
+                except ValueError:
+                    raise ValueError(f'Malformed .csv File: Column \'{field}\' not found!')
 
             reg = [{field : line[fieldmap[field]]
                     for field in self.__HEADER_FIELDS}
@@ -265,7 +268,7 @@ class Registration():
                 tag_id = entry['RFID'].strip()
                 first = entry['First Name'].strip()
                 last = entry['Last Name'].strip()
-                gender = entry['Gender'].strip()
+                sex = entry['Sex'].strip()
                 division = entry['Division'].strip()
                 offset_minutes = entry['Offset (min)'].strip()
                 highschool = entry['High School'].strip()
@@ -273,7 +276,7 @@ class Registration():
                 ag = entry['Age Group'].strip()
                 timeadjust = entry['Time Adjustment'].strip()
                 relay_name = entry['Relay Name'].strip()
-                registrant = self.Registrant(self, bib, tag_id, first, last, gender,
+                registrant = self.Registrant(self, bib, tag_id, first, last, sex,
                                         division, offset_minutes,
                                         highschool, univ, ag,
                                         timeadjust, relay_name)

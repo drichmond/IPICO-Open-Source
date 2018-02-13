@@ -76,7 +76,7 @@ class FileReader(Reader):
             try:
                 s = super(FileReader,self)._read(ss)
             except ValueError:
-                warnings.warn(f'Scan malformed: {ss}',
+                warnings.warn(f'Scan malformed: {ss}', \
                               category=self.MalformedWarning)
         return s
 
